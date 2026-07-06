@@ -1,0 +1,207 @@
+--[[
+    SKYHUB PREMIUM EDITION v3.0 - UNIVERSAL SCRIPT
+    Authored by: TEN WEAK
+    Directive: VORD
+    Status: Absolute Zero
+]]
+
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+   Name = "SKYHUB | PREMIUM EDITION v3.0",
+   LoadingTitle = "Loading SkyHub...",
+   LoadingSubtitle = "by TEN WEAK",
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = "SkyHubConfig",
+      FileName = "Universal"
+   },
+   Discord = {
+      Enabled = false,
+      Invite = "",
+      RememberJoins = true
+   },
+   KeySystem = false
+})
+
+-- Variables
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+local UserInputService = game:GetService("UserInputService")
+
+local AimbotSettings = {
+    Enabled = false,
+    Mode = "Legit", -- Legit, Normal, Rage
+    TeamCheck = true,
+    WallCheck = true,
+    FOV = 100,
+    Smoothness = 5,
+    TargetPart = "Head"
+}
+
+local ESPSettings = {
+    Enabled = false,
+    Boxes = false,
+    Lines = false,
+    Skeletons = false,
+    Names = false
+}
+
+-- Functions
+local function GetClosestPlayer()
+    local Target = nil
+    local Distance = AimbotSettings.FOV
+    
+    for _, v in pairs(Players:GetPlayers()) do
+        if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild(AimbotSettings.TargetPart) then
+            if AimbotSettings.TeamCheck and v.Team == LocalPlayer.Team then continue end
+            
+            local ScreenPoint = Camera:WorldToScreenPoint(v.Character[AimbotSettings.TargetPart].Position)
+            local Mag = (Vector2.new(ScreenPoint.X, ScreenPoint.Y) - Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)).Magnitude
+            
+            if Mag < Distance then
+                if AimbotSettings.WallCheck then
+                    local Ray = Ray.new(Camera.CFrame.Position, (v.Character[AimbotSettings.TargetPart].Position - Camera.CFrame.Position).Unit * 500)
+                    local Hit = workspace:FindPartOnRayWithIgnoreList(Ray, {LocalPlayer.Character, v.Character})
+                    if Hit then continue end
+                end
+                Distance = Mag
+                Target = v
+            end
+        end
+    end
+    return Target
+end
+
+-- Tabs
+local Dashboard = Window:CreateTab("Dashboard", 4483362458)
+local Movement = Window:CreateTab("Movement", 4483362458)
+local Combat = Window:CreateTab("Combat", 4483362458)
+local Visual = Window:CreateTab("Visual", 4483362458)
+local Misc = Window:CreateTab("Misc", 4483362458)
+
+-- Dashboard Info
+Dashboard:CreateSection("User Information")
+Dashboard:CreateLabel("Welcome back, " .. LocalPlayer.Name .. "!")
+Dashboard:CreateLabel("Rank: Lifetime Access")
+
+local RuntimeLabel = Dashboard:CreateLabel("Runtime: 00:00:00")
+spawn(function()
+    local StartTime = tick()
+    while wait(1) do
+        local Elapsed = tick() - StartTime
+        local Hours = math.floor(Elapsed / 3600)
+        local Minutes = math.floor((Elapsed % 3600) / 60)
+        local Seconds = math.floor(Elapsed % 60)
+        RuntimeLabel:Set(string.format("Runtime: %02d:%02d:%02d", Hours, Minutes, Seconds))
+    end
+end)
+
+-- Combat Section
+Combat:CreateSection("Aimbot Settings")
+Combat:CreateToggle({
+   Name = "Enable Aimbot",
+   CurrentValue = false,
+   Callback = function(Value)
+      AimbotSettings.Enabled = Value
+   end,
+})
+
+Combat:CreateDropdown({
+   Name = "Aimbot Mode",
+   Options = {"Legit", "Normal", "Rage"},
+   CurrentOption = {"Legit"},
+   MultipleOptions = false,
+   Callback = function(Option)
+      AimbotSettings.Mode = Option[1]
+   end,
+})
+
+Combat:CreateSlider({
+   Name = "FOV Size",
+   Range = {0, 800},
+   Increment = 10,
+   Suffix = "px",
+   CurrentValue = 100,
+   Callback = function(Value)
+      AimbotSettings.FOV = Value
+   end,
+})
+
+-- Visual Section
+Visual:CreateSection("ESP Settings")
+Visual:CreateToggle({
+   Name = "Enable ESP",
+   CurrentValue = false,
+   Callback = function(Value)
+      ESPSettings.Enabled = Value
+   end,
+})
+
+Visual:CreateToggle({
+   Name = "Show Boxes",
+   CurrentValue = false,
+   Callback = function(Value)
+      ESPSettings.Boxes = Value
+   end,
+})
+
+Visual:CreateToggle({
+   Name = "Show Lines",
+   CurrentValue = false,
+   Callback = function(Value)
+      ESPSettings.Lines = Value
+   end,
+})
+
+-- Movement Section
+Movement:CreateSection("Character Tweaks")
+Movement:CreateSlider({
+   Name = "WalkSpeed",
+   Range = {16, 500},
+   Increment = 1,
+   Suffix = " Speed",
+   CurrentValue = 16,
+   Callback = function(Value)
+      LocalPlayer.Character.Humanoid.WalkSpeed = Value
+   end,
+})
+
+Movement:CreateSlider({
+   Name = "JumpPower",
+   Range = {50, 500},
+   Increment = 1,
+   Suffix = " Power",
+   CurrentValue = 50,
+   Callback = function(Value)
+      LocalPlayer.Character.Humanoid.JumpPower = Value
+   end,
+})
+
+-- Logic Loop
+RunService.RenderStepped:Connect(function()
+    if AimbotSettings.Enabled then
+        local Target = GetClosestPlayer()
+        if Target and Target.Character and Target.Character:FindFirstChild(AimbotSettings.TargetPart) then
+            local TargetPos = Target.Character[AimbotSettings.TargetPart].Position
+            if AimbotSettings.Mode == "Rage" then
+                Camera.CFrame = CFrame.new(Camera.CFrame.Position, TargetPos)
+            elseif AimbotSettings.Mode == "Normal" then
+                local NewCF = CFrame.new(Camera.CFrame.Position, TargetPos)
+                Camera.CFrame = Camera.CFrame:Lerp(NewCF, 0.2)
+            elseif AimbotSettings.Mode == "Legit" then
+                local NewCF = CFrame.new(Camera.CFrame.Position, TargetPos)
+                Camera.CFrame = Camera.CFrame:Lerp(NewCF, 0.05)
+            end
+        end
+    end
+end)
+
+Rayfield:Notify({
+   Title = "SkyHub Loaded",
+   Content = "Zero degrees, VORD at the center.",
+   Duration = 5,
+   Image = 4483362458,
+})
